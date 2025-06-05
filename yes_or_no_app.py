@@ -19,7 +19,7 @@ if 'phase' not in st.session_state:
     st.session_state.ask_count = {}
     st.session_state.last_question = None
 
-st.title("🧠 เกม 'ใช่หรือไม่วะเนี่ย' ")
+st.title("🧠 เกม 'ใช่หรือไม่' - Advanced Edition")
 
 # --- SETUP PHASE ---
 if st.session_state.phase == 'setup':
@@ -45,7 +45,7 @@ if st.session_state.phase == 'setup':
 # --- SETTING SECRET ANSWER ---
 elif st.session_state.phase == 'set_answer':
     owner = st.session_state.players[st.session_state.current_owner_idx]
-    st.subheader(f"👑 {owner} ตั้งคำตอบ ลับ")
+    st.subheader(f"👑 {owner} ตั้งคำตอบลับ")
     st.session_state.answer = st.text_input("คำตอบลับของคุณ (จะถูกซ่อนไว้)", type="password")
 
     if st.button("🔒 ล็อคคำตอบและเริ่มรอบ") and st.session_state.answer:
@@ -61,7 +61,7 @@ elif st.session_state.phase == 'set_answer':
 
 # --- GAMEPLAY ---
 elif st.session_state.phase == 'playing':
-    st.subheader(f"🧩 ดูที่พวกมันถามดิ  ({st.session_state.total_questions}/{st.session_state.max_questions})")
+    st.subheader(f"🧩 คำถามที่ถามไปแล้ว ({st.session_state.total_questions}/{st.session_state.max_questions})")
     for q in st.session_state.question_history:
         with st.container():
             st.markdown(f"""<div style='background-color:#ffe8cc;padding:15px;border-radius:12px;font-size:18px'>
@@ -76,8 +76,8 @@ elif st.session_state.phase == 'playing':
         st.session_state.current_turn_idx = st.session_state.asking_queue[next_idx]
         st.rerun()
 
-    st.markdown(f"### 🕹️ ตาไอ้ :  **{current_player}**  อ่ะ")
-    action = st.radio("จะถามหรือจะตอบ เอาสักอย่าง :", ["ถาม", "ตอบ"], key=f"action_{st.session_state.current_turn_idx}")
+    st.markdown(f"### 🕹️ ถึงตาของ: **{current_player}**")
+    action = st.radio("เลือกสิ่งที่ต้องการทำ:", ["ถาม", "ตอบ"], key=f"action_{st.session_state.current_turn_idx}")
 
     if action == "ถาม" and st.session_state.ask_count[current_player] < 5:
         with st.form(f"ask_form_{st.session_state.current_turn_idx}"):
@@ -112,6 +112,7 @@ elif st.session_state.phase == 'playing':
 
 # --- OWNER ANSWERS THE QUESTION ---
 elif st.session_state.phase == 'owner_answer':
+    owner = st.session_state.players[st.session_state.current_owner_idx]
     st.subheader("👑 เจ้าของคำตอบ กรุณาตอบคำถาม")
     question_display = st.session_state.last_question + " ใช่หรือไม่?"
     st.markdown(f"""<div style='background-color:#fff3cd;padding:20px;border-radius:12px;font-size:20px'>

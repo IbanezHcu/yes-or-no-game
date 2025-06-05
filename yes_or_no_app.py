@@ -9,7 +9,8 @@ if 'phase' not in st.session_state:
     st.session_state.current_turn_idx = 0
     st.session_state.active_players = []
     st.session_state.eliminated = []
-    st.session_state.rounds_left = 1
+    st.session_state.total_rounds = 1
+    st.session_state.rounds_left = 0
     st.session_state.answer = ""
     st.session_state.question_history = []
     st.session_state.total_questions = 0
@@ -21,7 +22,7 @@ st.title("🧠 เกม 'ใช่หรือไม่' - Advanced Edition")
 if st.session_state.phase == 'setup':
     st.header("🎮 ตั้งค่าผู้เล่นและจำนวนรอบ")
     num_players = st.slider("จำนวนผู้เล่น (5-8 คน)", 5, 8, 5)
-    st.session_state.rounds_left = st.number_input("จำนวนรอบที่ต้องการเล่น (แต่ละคนจะได้ตั้งคำตอบเท่ากับรอบนี้)", min_value=1, value=1)
+    total_rounds = st.number_input("จำนวนรอบที่แต่ละคนจะได้ตั้งคำตอบ (1 รอบ = 1 คนตั้งคำตอบ)", min_value=1, value=1)
 
     names = []
     for i in range(num_players):
@@ -33,6 +34,8 @@ if st.session_state.phase == 'setup':
         st.session_state.players = names
         st.session_state.active_players = names.copy()
         st.session_state.scores = {name: 0 for name in names}
+        st.session_state.total_rounds = total_rounds
+        st.session_state.rounds_left = total_rounds * len(names)
         st.session_state.phase = 'set_answer'
         st.rerun()
 
@@ -54,7 +57,10 @@ elif st.session_state.phase == 'set_answer':
 elif st.session_state.phase == 'playing':
     st.subheader(f"🧩 คำถามที่ถามไปแล้ว ({st.session_state.total_questions}/{st.session_state.max_questions})")
     for q in st.session_state.question_history:
-        st.markdown(f"- {q}")
+        with st.container():
+            st.markdown(f"""<div style='background-color:#f0f0f0;padding:10px;border-radius:10px'>
+            <b>❓ {q}</b>
+            </div>""", unsafe_allow_html=True)
 
     current_player = st.session_state.players[st.session_state.current_turn_idx]
 

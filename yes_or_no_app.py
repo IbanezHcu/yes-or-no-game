@@ -16,7 +16,7 @@ if 'phase' not in st.session_state:
     st.session_state.total_questions = 0
     st.session_state.max_questions = 5
 
-st.title("🧠 เกม 'ใช่หรือไม่' - Advanced Edition")
+st.title("🧠 เกม 'ใช่หรือไม่' - Advanced Edition 555 ")
 
 # --- SETUP PHASE ---
 if st.session_state.phase == 'setup':

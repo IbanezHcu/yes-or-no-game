@@ -15,13 +15,15 @@ if 'phase' not in st.session_state:
     st.session_state.question_history = []
     st.session_state.total_questions = 0
     st.session_state.max_questions = 5
+    st.session_state.asking_queue = []
+    st.session_state.ask_count = {}
 
-st.title("🧠 เกม 'ใช่หรือไม่' - Advanced Edition 555 ")
+st.title("🧠 เกม 'ใช่หรือไม่' ")
 
 # --- SETUP PHASE ---
 if st.session_state.phase == 'setup':
     st.header("🎮 ตั้งค่าผู้เล่นและจำนวนรอบ")
-    num_players = st.slider("จำนวนผู้เล่น (5-8 คน)", 5, 8, 5)
+    num_players = st.slider("จำนวนผู้เล่น (2-10 คน)", 2, 10, 5)
     total_rounds = st.number_input("จำนวนรอบที่แต่ละคนจะได้ตั้งคำตอบ (1 รอบ = 1 คนตั้งคำตอบ)", min_value=1, value=1)
 
     names = []
@@ -42,36 +44,39 @@ if st.session_state.phase == 'setup':
 # --- SETTING SECRET ANSWER ---
 elif st.session_state.phase == 'set_answer':
     owner = st.session_state.players[st.session_state.current_owner_idx]
-    st.subheader(f"👑 {owner} ตั้งคำตอบลับ")
+    st.subheader(f"👑 {owner} ตั้งคำตอบ ลับ")
     st.session_state.answer = st.text_input("คำตอบลับของคุณ (จะถูกซ่อนไว้)", type="password")
 
-    if st.button("🔒 ล็อคคำตอบและเริ่มรอบ") and st.session_state.answer:
+    if st.button("🔒 เริ่มเกม") and st.session_state.answer:
         st.session_state.phase = 'playing'
-        st.session_state.current_turn_idx = (st.session_state.current_owner_idx + 1) % len(st.session_state.players)
+        st.session_state.asking_queue = [i for i in range(len(st.session_state.players)) if i != st.session_state.current_owner_idx]
+        st.session_state.current_turn_idx = st.session_state.asking_queue[0]
         st.session_state.eliminated = []
         st.session_state.question_history = []
         st.session_state.total_questions = 0
+        st.session_state.ask_count = {name: 0 for name in st.session_state.players}
         st.rerun()
 
 # --- GAMEPLAY ---
 elif st.session_state.phase == 'playing':
-    st.subheader(f"🧩 คำถามที่ถามไปแล้ว ({st.session_state.total_questions}/{st.session_state.max_questions})")
+    st.subheader(f"🧩 ข้างล่างนี่เรียกว่าคำถามแล้วซินะ  ({st.session_state.total_questions}/{st.session_state.max_questions})")
     for q in st.session_state.question_history:
         with st.container():
-            st.markdown(f"""<div style='background-color:#f0f0f0;padding:10px;border-radius:10px'>
+            st.markdown(f"""<div style='background-color:#ffe8cc;padding:15px;border-radius:12px;font-size:18px'>
             <b>❓ {q}</b>
             </div>""", unsafe_allow_html=True)
 
     current_player = st.session_state.players[st.session_state.current_turn_idx]
 
     if current_player in st.session_state.eliminated:
-        st.session_state.current_turn_idx = (st.session_state.current_turn_idx + 1) % len(st.session_state.players)
+        next_idx = (st.session_state.asking_queue.index(st.session_state.current_turn_idx) + 1) % len(st.session_state.asking_queue)
+        st.session_state.current_turn_idx = st.session_state.asking_queue[next_idx]
         st.rerun()
 
-    st.markdown(f"### 🕹️ ถึงตาของ: **{current_player}**")
-    action = st.radio("เลือกสิ่งที่ต้องการทำ:", ["ถาม", "ตอบ"], key=f"action_{st.session_state.current_turn_idx}")
+    st.markdown(f"### 🕹️ ตาไอ้  : **{current_player}**")
+    action = st.radio("จะถามหรือจะตอบ เอาสักอย่าง ! s:", ["ถาม", "ตอบ"], key=f"action_{st.session_state.current_turn_idx}")
 
-    if action == "ถาม":
+    if action == "ถาม" and st.session_state.ask_count[current_player] < 5:
         with st.form(f"ask_form_{st.session_state.current_turn_idx}"):
             question = st.text_input("พิมพ์คำถามของคุณ (ระบบจะเติม 'ใช่หรือไม่?' ให้อัตโนมัติ)")
             submit_q = st.form_submit_button("ถาม")
@@ -81,9 +86,11 @@ elif st.session_state.phase == 'playing':
             full_q = f"{question.strip()} ใช่หรือไม่? → {answer}"
             st.session_state.question_history.append(full_q)
             st.session_state.total_questions += 1
-            st.session_state.current_turn_idx = (st.session_state.current_turn_idx + 1) % len(st.session_state.players)
+            st.session_state.ask_count[current_player] += 1
+            idx = st.session_state.asking_queue.index(st.session_state.current_turn_idx)
+            st.session_state.current_turn_idx = st.session_state.asking_queue[(idx + 1) % len(st.session_state.asking_queue)]
 
-            if st.session_state.total_questions >= st.session_state.max_questions:
+            if all(count >= 5 for count in st.session_state.ask_count.values() if count != st.session_state.ask_count[st.session_state.players[st.session_state.current_owner_idx]]):
                 st.session_state.phase = 'result'
             st.rerun()
 
@@ -100,7 +107,8 @@ elif st.session_state.phase == 'playing':
             else:
                 st.warning("❌ ผิด! คุณตกรอบนี้แล้ว")
                 st.session_state.eliminated.append(current_player)
-                st.session_state.current_turn_idx = (st.session_state.current_turn_idx + 1) % len(st.session_state.players)
+                idx = st.session_state.asking_queue.index(st.session_state.current_turn_idx)
+                st.session_state.current_turn_idx = st.session_state.asking_queue[(idx + 1) % len(st.session_state.asking_queue)]
             st.rerun()
 
 # --- RESULT ---
